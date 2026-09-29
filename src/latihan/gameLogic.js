@@ -52,12 +52,30 @@ export function startGame(game) {
     game.hud.setCountdownText('3', '#ffffff');
     game.gameOverDisplay.hide();
     game.status = 'GET READY 3';
-
 }
 
 export function updateCountdown(delta, game) {
     // TODO (versi siswa): selesaikan hitung mundur lalu ubah state ke PLAYING.
     // Petunjuk: countdownStepTimer berkurang dengan delta; tampilkan 3, 2, 1, GO.
+
+    if (game.state !== GAME_STATES.COUNTDOWN) return;
+    game.countdownRemaining = Math.max(0, game.countdownRemaining - delta);
+    const currentCount = Math.ceil(game.countdownRemaining);
+    if (currentCount >= 1) {
+        game.hud.setCountdownText(String(currentCount), '#ffffff');
+    } else {
+        game.hud.setCountdownText('GO!', '#66ff66');
+        game.state = GAME_STATES.PLAYING;
+        game.gameElapsed = 0;
+        game.target.visible = game.assets?.dummy == null;
+        if (game.assets?.dummy) game.assets.dummy.visible = true;
+        game.feedbackTimer = 0.8;
+        game.status = 'GO!';
+        game.countdownRemaining = -999;
+    }
+
+    if (game.countdownRemaining < -0.45) game.hud.showCountdown(false);
+
 }
 
 
