@@ -82,5 +82,15 @@ export function updateCountdown(delta, game) {
 export function gameOver(game) {
     // TODO (versi siswa): akhiri ronde satu kali dan tampilkan hasil akhir.
     // Petunjuk: ubah state, sembunyikan HUD/dummy, lalu panggil game.showGameOver(score).
+
+    if (game.state === GAME_STATES.GAME_OVER) return;
+    game.state = GAME_STATES.GAME_OVER;
+    game.target.visible = false;
+    game.hud.show(false);
+    game.hud.showCountdown(false);
+    game.status = 'GAME OVER';
+    if (game.assets?.dummy) game.assets.dummy.visible = false;
+    game.showGameOver(game.score, game.hits, game.misses, game.perfects,
+        game.bestCombo);
 }
 
