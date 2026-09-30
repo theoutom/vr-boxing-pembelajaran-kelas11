@@ -118,16 +118,45 @@ export function checkHit(controller, game, motion = game.latestMotion, speed = g
 function sampleHandMotion(controller, previousPosition, samples, delta) {
     // TODO (versi siswa): simpan posisi controller dan hitung kecepatan.
     // Petunjuk: jarak dibagi delta menghasilkan kecepatan; jendela waktu mengurangi noise.
+    const currentPosition = new THREE.Vector3();
+    controller.getWorldPosition(currentPosition);
+    const from = previousPosition.clone();
+    const distance = from.distanceTo(currentPosition);
+    const instantSpeed = distance / Math.max(delta, 0.001);
+    previousPosition.copy(currentPosition);
+
+    const now = performance.now();
+    samples.push({ position: currentPosition.clone(), time: now });
+    const cutoff = now - SPEED_WINDOW * 1000;
+    while (samples.length > 1 && samples[0].time < cutoff) samples.shift();
+
+    let windowSpeed = instantSpeed;
+    if (samples.length >= 2) {
+        const first = samples[0];
+        const elapsed = Math.max((now - first.time) / 1000, 0.001);
+        windowSpeed = first.position.distanceTo(currentPosition) / elapsed;
+    }
+    return { from, to: currentPosition, instantSpeed, windowSpeed };
 }
 
 function isTargetedSwing(motion, game) {
     // TODO (versi siswa): bedakan ayunan yang menuju target dari gerakan lain.
     // Petunjuk: gunakan dot product arah ayunan dan arah target.
-
+    const punchDirection = motion.to.clone().sub(motion.from).normalize();
+    const targetDirection = game.target.position.clone().sub(motion.from).normalize();
+    const segmentDistance = distancePointToSegment(game.target.position, motion.from, motion.to);
+    return punchDirection.dot(targetDirection) >= 0.45 && segmentDistance <= 1.0;
 }
 
 function distancePointToSegment(point, start, end) {
     // TODO (versi siswa): cari jarak minimum titik terhadap garis segmen.
     // Petunjuk: proyeksikan vektor ke segmen dan batasi parameter t ke 0..1.
+    const segment = new THREE.Vector3().subVectors(end, start);
+    const lengthSq = segment.lengthSq();
+    if (lengthSq < 0.000001) return point.distanceTo(start);
+    const toPoint = new THREE.Vector3().subVectors(point, start);
+    const t = THREE.MathUtils.clamp(toPoint.dot(segment) / lengthSq, 0, 1);
+    const closest = start.clone().add(segment.multiplyScalar(t));
+    return point.distanceTo(closest);
 }
 
